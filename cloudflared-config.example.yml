@@ -1,0 +1,8 @@
+# Copy to cloudflared-config.yml and replace the placeholder values.
+tunnel: YOUR_TUNNEL_UUID
+credentials-file: C:\\path\\to\\cloudflared-credentials.json
+
+ingress:
+  - hostname: your-domain.example.com
+    service: http://localhost:5000
+  - service: http_status:404

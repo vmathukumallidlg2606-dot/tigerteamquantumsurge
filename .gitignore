@@ -1,0 +1,37 @@
+# Firebase service account key (sensitive) - never commit credentials
+firebase-service-account.json
+firebase-service-account.json.*
+*.service-account.json
+*-service-account.json
+*.key.json
+*.bak
+*.backup
+*.env
+.env
+*.json
+!package-lock.json
+!requirements.json
+!requirements.txt
+
+# Local logs / runtime artifacts
+*.log
+flask.log
+cloudflared.log
+cloudflared.err.log
+chroma_db/
+local_data/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Local tools and service configuration
+cloudflared.exe
+cloudflared-credentials.json
+cloudflared-config.yml
+
+# Editor and temporary files
+.vscode/
+.idea/
+*.bak
+*.backup
+temp.txt

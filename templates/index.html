@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CompTIA Sec+ Learning Accelerator</title>
+    <!-- Google Fonts Outfit & Orbitron -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ static_url('style.css') }}">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="{{ static_url('firebase-init.js') }}"></script>
+    
+    <!-- GFM Markdown Rendering Utility -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <!-- Floating Tooltip for Text Selection Rewrite -->
+    <div id="text-select-tooltip" class="text-select-tooltip hidden">
+        <button onclick="requestDumbDown()">🧠 Dumb it down</button>
+    </div>
+
+    <!-- App Shell Layout -->
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <span class="shield-icon">🛡️</span>
+                <span>CompTIA Sec+</span>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <button id="nav-dashboard" class="nav-btn active" onclick="switchNav('dashboard')">
+                    <span class="icon">📊</span> Dashboard
+                </button>
+                <button id="nav-topics" class="nav-btn" onclick="switchNav('topics')">
+                    <span class="icon">📚</span> Topics & Domains
+                </button>
+                <button id="nav-progress" class="nav-btn" onclick="switchNav('progress')">
+                    <span class="icon">📈</span> Progress
+                </button>
+                <button id="nav-quikquiz" class="nav-btn" onclick="switchNav('quikquiz')">
+                    <span class="icon">⚡</span> QuikQuiz
+                </button>
+                <button id="nav-instructor" class="nav-btn" onclick="switchNav('instructor')">
+                    <span class="icon">🎓</span> Instructor
+                </button>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <span>Learning Accelerator v1.0</span>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <div class="main-viewport">
+            <header class="top-nav-bar">
+                <div class="instructor-panel">
+                    <span class="instructor-indicator">🤖 Agentic Tutor Mode:</span>
+                    <button id="mode-mil" class="mode-select active" onclick="setInstructorMode('military_analogy')">🛡️ Military Metaphor</button>
+                    <button id="mode-tech" class="mode-select" onclick="setInstructorMode('technical_breakdown')">⚙️ Technical Spec</button>
+                </div>
+                <div id="auth-button" class="auth-button-container">
+                    <button onclick="signInWithGoogle()" class="google-signin-btn">🔒 Sign in with Google</button>
+                </div>
+            </header>
+
+            <div class="content-container">
+                <!-- VIEW 1: Dashboard -->
+                <section id="view-dashboard" class="viewport-view active">
+                    <h1 class="welcome-text">Welcome back</h1>
+                    <p class="subtitle-text">Your Security+ exam readiness at a glance.</p>
+
+                    <!-- Top stats cards -->
+                    <div class="stats-row">
+                        <div class="stat-card">
+                            <div class="stat-card-header">
+                                <span>Exam Readiness</span>
+                                <span class="card-icon">🛡️</span>
+                            </div>
+                            <div id="metric-readiness" class="stat-val">0%</div>
+                            <div class="progress-track">
+                                <div id="metric-readiness-bar" class="progress-fill" style="width: 0%;"></div>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-card-header">
+                                <span>Average Mastery</span>
+                                <span class="card-icon">🎯</span>
+                            </div>
+                            <div id="metric-mastery" class="stat-val">0%</div>
+                            <p class="stat-subtext">Across all active topics</p>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-card-header">
+                                <span>Reviews Logged</span>
+                                <span class="card-icon">📝</span>
+                            </div>
+                            <div id="metric-reviews" class="stat-val">0</div>
+                            <p class="stat-subtext">Practice quizzes completed</p>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-card-header">
+                                <span>Lessons Completed</span>
+                                <span class="card-icon">📖</span>
+                            </div>
+                            <div id="metric-lessons" class="stat-val">0</div>
+                            <p class="stat-subtext">Total materials generated</p>
+                        </div>
+                    </div>
+
+                    <!-- Domain Breakdown and Activity Row -->
+                    <div class="dashboard-details-row">
+                        <div class="domain-breakdown-card card-full">
+                            <h3>Domain Breakdown</h3>
+                            <p class="card-desc">Mastery across the CompTIA Security+ domains</p>
+                            
+                            <div id="dashboard-domain-list" class="domain-progress-list">
+                                <!-- Dynamic List -->
+                            </div>
+                        </div>
+
+                        <div class="recent-activity-card card-half">
+                            <h3>Recent Activity</h3>
+                            <div id="dashboard-activity-list" class="activity-feed">
+                                <div class="empty-feed">No activity yet. Start studying!</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Jump Links -->
+                    <div class="quick-jump-section">
+                        <div class="quick-jump-header">
+                            <h3>Quick Jump</h3>
+                            <button class="text-link-btn" onclick="switchNav('topics')">View all topics</button>
+                        </div>
+                        <div id="quick-jump-grid" class="quick-jump-grid">
+                            <!-- Dynamic Cards -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- VIEW 2: Topics & Domains -->
+                <section id="view-topics" class="viewport-view">
+                    <div id="topics-directory-container">
+                        <h1>Security+ Domains</h1>
+                        <p class="subtitle-text">Master the domains of the CompTIA Security+ exam.</p>
+                        
+                        <div id="domain-cards-grid" class="domain-cards-grid">
+                            <!-- Dynamic Cards -->
+                        </div>
+                    </div>
+
+                    <!-- Lesson/Quiz Study Workspace (Visible when topic clicked) -->
+                    <div id="topic-workspace-container" class="hidden">
+                        <button class="back-link-btn" onclick="exitTopicWorkspace()">← Back to Domains</button>
+                        
+                        <div class="workspace-header">
+                            <div>
+                                <span id="ws-domain-name" class="domain-category-tag">Domain Name</span>
+                                <h1 id="ws-topic-name">Topic Name</h1>
+                                <p id="ws-topic-desc" class="topic-description"></p>
+                            </div>
+                            
+                            <div class="workspace-stats-box">
+                                <div class="workspace-metric">
+                                    <span class="lbl">Mastery Level</span>
+                                    <strong id="ws-mastery-level">0%</strong>
+                                </div>
+                                <div class="workspace-slider-control">
+                                    <span>Assess Confidence:</span>
+                                    <div class="slider-wrapper">
+                                        <input type="range" id="ws-confidence-slider" min="1" max="5" step="1" onchange="adjustConfidence()">
+                                        <span id="ws-confidence-indicator" class="slider-indicator">3/5</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Panel Tabs -->
+                        <div class="workspace-tabs">
+                            <button id="ws-tab-lesson" class="ws-tab active" onclick="switchWorkspaceTab('lesson')">📖 Lessons</button>
+                            <button id="ws-tab-quiz" class="ws-tab" onclick="switchWorkspaceTab('quiz')">⚔️ Quizzes</button>
+                            <button id="ws-tab-presentation" class="ws-tab" onclick="switchWorkspaceTab('presentation')">🎬 Presentation</button>
+                        </div>
+
+                        <!-- Lesson Tab Pane -->
+                        <div id="pane-ws-lesson" class="ws-pane active">
+                            <div class="lesson-actions-row">
+                                <h3>Generated Study Materials</h3>
+                                <button class="primary-action-btn" onclick="generateLesson()">✨ Generate Lesson</button>
+                            </div>
+
+                            <div id="lesson-content-viewport" class="lesson-content-viewport">
+                                <div class="empty-view-state">
+                                    <span class="empty-icon">📄</span>
+                                    <h4>No lessons yet</h4>
+                                    <p>Have the AI tutor generate a comprehensive lesson for this topic to start your study journey.</p>
+                                    <button class="accent-action-btn" onclick="generateLesson()">Generate Your First Lesson</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quiz Tab Pane -->
+                        <div id="pane-ws-quiz" class="ws-pane">
+                            <div id="quiz-workspace-init" class="quiz-workspace-init">
+                                <div class="empty-icon">⚔]</div>
+                                <h4>Ready for Assessment?</h4>
+                                <p>Generate 3 dynamic questions customized by the AI engine based on this topic's current progress.</p>
+                                <button class="primary-action-btn" onclick="startWorkspaceQuiz()">Generate Practice Quiz</button>
+                            </div>
+
+                            <div id="quiz-workspace-active" class="hidden">
+                                <div class="quiz-meta-header">
+                                    <span id="ws-quiz-index">Question 1 of 3</span>
+                                    <span id="ws-quiz-diff" class="difficulty-tag">medium</span>
+                                </div>
+                                <div class="quiz-card-body">
+                                    <div class="scenario-panel">
+                                        <strong>Scenario:</strong>
+                                        <p id="ws-quiz-scenario"></p>
+                                    </div>
+                                    <h4 id="ws-quiz-question-text">Question text?</h4>
+                                    <div id="ws-quiz-options" class="quiz-options-layout">
+                                        <!-- Dynamic Options -->
+                                    </div>
+                                </div>
+                                <div class="quiz-controls-row">
+                                    <button id="ws-quiz-next-btn" class="primary-action-btn" onclick="nextWorkspaceQuestion()">Next Question</button>
+                                </div>
+                            </div>
+
+                            <div id="quiz-workspace-results" class="hidden">
+                                <div class="quiz-results-banner">
+                                    <h3 id="ws-results-score">Quiz Complete: 66%</h3>
+                                    <p>Your mastery score has been adjusted according to your answers.</p>
+                                    <button class="text-link-btn" onclick="startWorkspaceQuiz()">Retake Quiz</button>
+                                </div>
+                                <div id="ws-results-breakdown" class="results-explanations-list">
+                                    <!-- Dynamic Breakdown Cards -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Presentation Tab Pane -->
+                        <div id="pane-ws-presentation" class="ws-pane">
+                            <div id="presentation-init-state">
+                                <div class="empty-view-state">
+                                    <span class="empty-icon">🎬</span>
+                                    <h4>AI-Powered Presentation</h4>
+                                    <p>Generate a beautiful, slide-based presentation for this topic. The AI will create structured slides covering key concepts, examples, and summaries — ready to review or share.</p>
+                                    <button class="primary-action-btn presentation-gen-btn" onclick="generatePresentation()">
+                                        <span id="pres-btn-label">✨ Generate Presentation</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Slide Viewer -->
+                            <div id="presentation-viewer" class="presentation-viewer hidden">
+                                <div class="presentation-controls-bar">
+                                    <button class="pres-nav-btn" id="pres-prev-btn" onclick="prevSlide()" disabled>◀ Prev</button>
+                                    <span class="pres-slide-counter" id="pres-slide-counter">Slide 1 / 1</span>
+                                    <button class="pres-nav-btn" id="pres-next-btn" onclick="nextSlide()">Next ▶</button>
+                                    <button class="pres-fullscreen-btn" onclick="togglePresentationFullscreen()">⛶ Fullscreen</button>
+                                    <button class="pres-regen-btn" onclick="resetPresentation()">↺ Regenerate</button>
+                                </div>
+                                <div id="presentation-stage" class="presentation-stage">
+                                    <!-- Slides injected here dynamically -->
+                                </div>
+                                <div class="pres-progress-track">
+                                    <div class="pres-progress-fill" id="pres-progress-fill"></div>
+                                </div>
+                            </div>
+
+                            <!-- Loading State -->
+                            <div id="presentation-loading" class="hidden">
+                                <div class="pres-loading-anim">
+                                    <div class="pres-loader-ring"></div>
+                                    <h4>Generating Presentation…</h4>
+                                    <p id="pres-loading-status">Analyzing topic content…</p>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </section>
+
+                <!-- VIEW 3: Progress -->
+                <section id="view-progress" class="viewport-view">
+                    <h1>Your Progress</h1>
+                    <p class="subtitle-text">Track your readiness for the Security+ exam.</p>
+
+                    <div class="progress-totals-cards">
+                        <div class="totals-card">
+                            <div class="circle-progress-wrapper">
+                                <span class="totals-card-icon">🏆</span>
+                                <div>
+                                    <div id="prog-metric-readiness" class="stat">0%</div>
+                                    <span class="label">Exam Readiness</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="totals-card">
+                            <div class="circle-progress-wrapper">
+                                <span class="totals-card-icon">🔥</span>
+                                <div>
+                                    <div class="stat">1 Day</div>
+                                    <span class="label">Active Streak</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="totals-card">
+                            <div class="circle-progress-wrapper">
+                                <span class="totals-card-icon">⏱️</span>
+                                <div>
+                                    <div class="stat">Live Study</div>
+                                    <span class="label">Dynamic Mode Active</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="topic-mastery-report-card">
+                        <h3>Topic Mastery</h3>
+                        <p class="card-desc">Detailed breakdown of your performance across all topics</p>
+
+                        <div id="progress-report-list" class="progress-report-list">
+                            <!-- Dynamic report rows -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- VIEW 4: QuikQuiz -->
+                <section id="view-quikquiz" class="viewport-view">
+                    <h1>QuikQuiz</h1>
+                    <p class="subtitle-text">Take an assigned quiz or generate a practice session to send to your instructor.</p>
+
+                    <div class="assignment-join-card" id="my-assignments-card">
+                        <h3>My Assignments</h3>
+                        <p class="card-desc">Quizzes your instructor has assigned to you.</p>
+                        <div id="my-assignments-list" class="instructor-table-wrap">
+                            <div class="empty-feed">Loading assignments…</div>
+                        </div>
+                    </div>
+
+                    <div class="assignment-join-card">
+                        <h3>Assigned Quiz (Code)</h3>
+                        <p class="card-desc">Enter the code from your instructor to start a graded quiz.</p>
+                        <div class="assignment-join-row">
+                            <input type="text" id="assignment-code-input" placeholder="Enter code (e.g. ABC123)" maxlength="8" autocomplete="off">
+                            <button class="primary-action-btn" onclick="joinAssignmentByCode()">Start Assigned Quiz</button>
+                        </div>
+                    </div>
+
+                    <div class="topic-mastery-report-card">
+                        <div id="quikquiz-init" class="empty-view-state">
+                            <span class="empty-icon">⚡</span>
+                            <h4>Practice quiz (send to instructor)</h4>
+                            <p>Generate a short AI quiz — your score is sent to the instructor, not shown to you.</p>
+                            <button class="primary-action-btn" onclick="showQuikQuizTopicPicker()">Generate</button>
+                        </div>
+
+                        <div id="quikquiz-active" class="hidden">
+                            <div class="quiz-meta-header">
+                                <span id="qq-quiz-topic"></span>
+                                <span id="qq-quiz-index">Question 1 of 3</span>
+                                <span id="qq-quiz-diff" class="difficulty-tag">medium</span>
+                            </div>
+                            <div class="quiz-card-body">
+                                <div class="scenario-panel">
+                                    <strong>Scenario:</strong>
+                                    <p id="qq-quiz-scenario"></p>
+                                </div>
+                                <h4 id="qq-quiz-question-text">Question text?</h4>
+                                <div id="qq-quiz-options" class="quiz-options-layout"></div>
+                            </div>
+                            <div class="quiz-controls-row">
+                                <button id="qq-quiz-next-btn" class="primary-action-btn" onclick="nextQuikQuizQuestion()">Next Question</button>
+                            </div>
+                        </div>
+
+                        <div id="quikquiz-results" class="hidden">
+                            <div class="quiz-results-banner quiz-results-hidden-score">
+                                <h3>Quiz Complete</h3>
+                                <p id="qq-results-summary">Your responses have been recorded. Send your report to the instructor.</p>
+                                <button id="qq-send-report-btn" class="primary-action-btn" onclick="sendQuikQuizReport()">Send Quiz Report</button>
+                                <button class="text-link-btn" onclick="resetQuikQuiz()">Back to Start</button>
+                                <p id="qq-report-status" class="report-status-msg hidden"></p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- VIEW 5: Instructor Dashboard -->
+                <section id="view-instructor" class="viewport-view">
+                    <h1>Instructor Dashboard</h1>
+                    <p class="subtitle-text">Create assignments, share codes with students, and review all scores.</p>
+
+                    <div class="instructor-grid">
+                        <div class="instructor-card">
+                            <h3>Create QuikQuiz</h3>
+                            <p class="card-desc">Generates 20 AI questions across the chosen topics. You can review the questions before assigning.</p>
+
+                            <label class="instructor-label" for="assignment-title-input">Assignment title</label>
+                            <input type="text" id="assignment-title-input" placeholder="e.g. Week 3 Security Controls Quiz">
+
+                            <label class="instructor-label">Topics</label>
+                            <div id="instructor-topic-list" class="qq-topic-list instructor-topic-list"></div>
+                            <div class="instructor-actions">
+                                <button type="button" class="text-link-btn" id="instructor-topics-all">Select all</button>
+                                <button type="button" class="text-link-btn" id="instructor-topics-none">Clear all</button>
+                                <span id="instructor-topic-count" class="student-meta"></span>
+                            </div>
+
+                            <label class="instructor-label">Assign to</label>
+                            <div class="assignee-mode-row">
+                                <label class="assignee-mode-option"><input type="radio" name="assignee-mode" value="all" checked> All current and future students</label>
+                                <label class="assignee-mode-option"><input type="radio" name="assignee-mode" value="specific"> Specific students</label>
+                            </div>
+
+                            <div id="instructor-students-target" class="instructor-students-target hidden">
+                                <input type="search" id="instructor-students-search" placeholder="Search by email or name" autocomplete="off">
+                                <div class="instructor-actions">
+                                    <button type="button" class="text-link-btn" id="instructor-students-all">Select all</button>
+                                    <button type="button" class="text-link-btn" id="instructor-students-none">Clear all</button>
+                                    <span id="instructor-students-count" class="student-meta"></span>
+                                </div>
+                                <div id="instructor-students-list-target" class="instructor-students-list"></div>
+                            </div>
+
+                            <button class="primary-action-btn" id="create-assignment-btn">Create QuikQuiz</button>
+
+                            <div id="create-assignment-progress" class="create-progress hidden">
+                                <div class="create-progress-label" id="create-assignment-progress-label">Generating questions…</div>
+                                <div class="create-progress-track"><div class="create-progress-fill" id="create-assignment-progress-fill"></div></div>
+                            </div>
+
+                            <p id="create-assignment-status" class="report-status-msg hidden"></p>
+                        </div>
+
+                        <div class="instructor-card instructor-card-wide">
+                            <h3>Assignments</h3>
+                            <p class="card-desc">Share the access code with students. They enter it on the QuikQuiz page.</p>
+                            <div id="instructor-assignments-list" class="instructor-table-wrap">
+                                <div class="empty-feed">Loading assignments…</div>
+                            </div>
+                        </div>
+
+                        <div class="instructor-card instructor-card-wide">
+                            <h3>All Scores</h3>
+                            <p class="card-desc">Assignment submissions and ad-hoc QuikQuiz reports from all students.</p>
+                            <div id="instructor-scores-list" class="instructor-table-wrap">
+                                <div class="empty-feed">Loading scores…</div>
+                            </div>
+                        </div>
+
+                        <div class="instructor-card instructor-card-wide">
+                            <h3>Students</h3>
+                            <p class="card-desc">Everyone who has signed in to Quantum Surge, alphabetical by email.</p>
+                            <div id="instructor-students-list" class="instructor-table-wrap">
+                                <div class="empty-feed">Loading students…</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+    <!-- Review Assignment Modal -->
+    <div id="review-assignment-modal" class="qq-modal-overlay hidden">
+        <div class="qq-modal-card review-assignment-card">
+            <div class="qq-modal-header">
+                <h3>Review QuikQuiz</h3>
+                <button type="button" class="qq-modal-close" onclick="closeReviewAssignmentModal()" aria-label="Close">×</button>
+            </div>
+            <p class="qq-modal-desc">Inspect the AI-generated questions before publishing them to your students.</p>
+            <div class="review-meta" id="review-meta"></div>
+            <div id="review-questions-list" class="review-questions-list"></div>
+            <div class="qq-modal-actions">
+                <button type="button" class="text-link-btn" onclick="regenerateReviewedAssignment()">Regenerate</button>
+                <button type="button" class="text-link-btn" onclick="saveReviewedAssignmentAsDraft()">Save as Draft</button>
+                <button type="button" class="primary-action-btn" onclick="approveReviewedAssignment()">Approve &amp; Assign</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- QuikQuiz Topic Picker Modal -->
+    <div id="quikquiz-topic-modal" class="qq-modal-overlay hidden">
+        <div class="qq-modal-card">
+            <div class="qq-modal-header">
+                <h3>Choose Quiz Topics</h3>
+                <button type="button" class="qq-modal-close" onclick="closeQuikQuizTopicPicker()" aria-label="Close">✕</button>
+            </div>
+            <p class="qq-modal-desc">Select one or more topics you want to be quizzed on.</p>
+            <div class="qq-modal-toolbar">
+                <button type="button" class="text-link-btn" onclick="selectAllQuikQuizTopics(true)">Select all</button>
+                <button type="button" class="text-link-btn" onclick="selectAllQuikQuizTopics(false)">Clear all</button>
+            </div>
+            <div id="quikquiz-topic-list" class="qq-topic-list"></div>
+            <div class="qq-modal-actions">
+                <button type="button" class="text-link-btn" onclick="closeQuikQuizTopicPicker()">Cancel</button>
+                <button type="button" class="primary-action-btn" onclick="confirmQuikQuizTopics()">Start Quiz</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating AI Tutor Ask Question Overlay -->
+    <div id="ai-chat-widget" class="ai-chat-widget collapsed">
+        <div class="chat-widget-header" onclick="toggleChatWidget()">
+            <div class="chat-header-title">
+                <span class="chat-icon">💬</span>
+                <strong>Ask AI Instructor</strong>
+            </div>
+            <span id="chat-toggle-icon" class="toggle-icon">▲</span>
+        </div>
+        <div class="chat-widget-body">
+            <div class="context-indicator-bar">
+                <span>Active Context:</span>
+                <strong id="chat-context-label">Dashboard Overview</strong>
+            </div>
+            <div id="chat-messages-container" class="chat-messages-container">
+                <div class="chat-message agent">
+                    Hello! I'm your Security+ digital instructor. Since I monitor what page you are studying, feel free to ask me any question about our current topic!
+                </div>
+            </div>
+            <div class="chat-input-bar">
+                <input type="text" id="chat-input-field" placeholder="Ask a question about this topic..." onkeydown="handleChatSubmit(event)">
+                <button class="chat-send-btn" onclick="sendChatMessage()">Send</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="{{ static_url('app.js') }}"></script>
+</body>
+</html>
+
